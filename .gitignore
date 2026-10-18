@@ -1,0 +1,26 @@
+# Environment / secrets — never commit
+.env
+.env.*
+!.env.example
+
+# Dependencies
+/vendor/
+node_modules/
+
+# Laravel artifacts
+/storage/*.key
+/bootstrap/cache/*.php
+.phpunit.result.cache
+phpunit.xml.bak
+
+# Build / test output
+/build/
+/coverage/
+playwright-report/
+test-results/
+
+# Editors / OS
+.idea/
+.vscode/
+*.swp
+.DS_Store
