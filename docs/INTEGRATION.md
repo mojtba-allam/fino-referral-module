@@ -105,3 +105,33 @@ a host key `__('api.errors.unauthorized')` for the 401 — provide it or replace
 
 Validation messages in the request classes are intentionally Persian, matching
 the finonet.ir contract; adjust per your audience.
+
+## Optional: act as a sender (forward a referred signup to finonet.ir)
+
+Everything above is the **receiver**. If your host product should also refer its
+own users *into* the finonet sales network, enable the **sender** path
+([SENDER.md](SENDER.md)). The module ships the outbound job; you only add one
+dispatch where your host creates a new user.
+
+- Enable `referral.forward` (`FINONET_FORWARD_SIGNUP_ENABLED=true`,
+  `FINONET_SIGNUP_WEBHOOK_URL`, and a **separate** `FINONET_WEBHOOK_SECRET`).
+- Capture `?finonet_ref=<code>` at signup and, for a **brand-new** user only and
+  only when the code is **non-empty**, dispatch:
+
+  ```php
+  use Modules\Referral\Jobs\ForwardSignupToFinonet;
+
+  if ($isNewUser && $referralRef !== '') {
+      try {
+          ForwardSignupToFinonet::dispatch($referralRef, $user->name, $mobile, $nationalId);
+      } catch (\Throwable $e) {
+          report($e); // best-effort; never break signup
+      }
+  }
+  ```
+
+- Dispatch **after** the DB transaction commits, and run a queue worker (or
+  `sync` in tests). The job swallows 4xx (no retry) and rethrows 5xx (retry).
+
+This is fully independent of the receiver path — a project can be receiver-only,
+sender-only, or both.

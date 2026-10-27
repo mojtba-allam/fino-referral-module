@@ -8,7 +8,7 @@ outside the config file** — set the env vars and read through `config()`.
 After any change run `php artisan config:clear` (and `php artisan route:clear`
 if you toggled a webhook endpoint, since routes are registered at boot).
 
-## Environment reference
+## Environment reference — receiver (inbound)
 
 | Env var | Config key | Default | Required | Notes |
 | --- | --- | --- | --- | --- |
@@ -28,6 +28,23 @@ if you toggled a webhook endpoint, since routes are registered at boot).
 > The referral link is `"<link_base>?finonet_ref=<code>"`. `finonet_ref` is the
 > fixed query parameter finopal preserves and echoes back as `referral_code` in
 > the signup webhook. It is **not** configurable — it is part of the contract.
+
+## Environment reference — sender (outbound, optional)
+
+Only used when the host forwards a referred signup to the finonet sales
+organization. See [SENDER.md](SENDER.md) for wiring.
+
+| Env var | Config key | Default | Required | Notes |
+| --- | --- | --- | --- | --- |
+| `FINONET_FORWARD_SIGNUP_ENABLED` | `forward.enabled` | `false` | No | Master switch for outbound forwarding. Off by default so a unit run never POSTs to the real panel. |
+| `FINONET_SIGNUP_WEBHOOK_URL` | `forward.signup_url` | `https://finonet.ir/api/webhooks/finopal/signup` | No | The finonet.ir **receiver** endpoint the host posts the signup webhook to. |
+| `FINONET_WEBHOOK_SECRET` | `forward.secret` | *(empty)* | For sender | **OUTBOUND** secret. Must equal what finonet.ir expects on `/api/webhooks/finopal/*`. **Deliberately separate** from the inbound `FINOPAL_WEBHOOK_SECRET`. Empty → forwarding is skipped (`referral.forward_skipped`). |
+| `FINONET_FORWARD_TIMEOUT` | `forward.timeout` | `15` | No | Outbound HTTP timeout (seconds). |
+
+> **Never reuse the inbound secret for outbound, and never commit either.** The
+> outbound secret is provided by the finonet team. `ForwardSignupToFinonet` is
+> best-effort: a 4xx is logged and **not** retried; a 5xx/network error rethrows
+> so the queue retries (`tries=3`, `backoff=30`); it never breaks signup.
 
 ## Sandbox vs production
 
@@ -75,6 +92,7 @@ finopal, then `php artisan config:clear`.
 ## Full `.env.example`
 
 ```dotenv
+# --- Receiver (inbound) ---
 FINOPAL_WEBHOOK_SECRET=
 FINOPAL_SANDBOX=true
 FINOPAL_API_BASE=https://sandbox.finopal.ir
@@ -87,4 +105,10 @@ FINOPAL_WELCOME_SMS_ENABLED=true
 FINOPAL_WEBHOOK_SIGNUP_ENABLED=true
 FINOPAL_WEBHOOK_GATEWAY_ENABLED=true
 FINOPAL_WEBHOOK_TRANSACTION_ENABLED=true
+
+# --- Sender (outbound, optional) — see docs/SENDER.md ---
+FINONET_FORWARD_SIGNUP_ENABLED=false
+FINONET_SIGNUP_WEBHOOK_URL=https://finonet.ir/api/webhooks/finopal/signup
+FINONET_WEBHOOK_SECRET=
+FINONET_FORWARD_TIMEOUT=15
 ```

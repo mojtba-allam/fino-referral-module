@@ -13,9 +13,11 @@ project plugs in through **three small contracts** (identity, resolver,
 notifier). Copy the folder into any Laravel app that follows the same layered
 module convention and it works.
 
-> This module is a **receiver only**. It does not make outbound calls to
-> finopal/finonet.ir. finopal is configured (on its side) to POST the webhooks
-> to your endpoints, signed with a shared secret.
+> Core is a **receiver**: finopal is configured (on its side) to POST the
+> webhooks to your endpoints, signed with a shared secret. An **optional sender**
+> mode lets your host forward a referred signup out to `finonet.ir` (opt-in via
+> `referral.forward`) when a user arrives with `?finonet_ref=<code>` — see
+> [docs/SENDER.md](docs/SENDER.md).
 
 ---
 
@@ -32,6 +34,9 @@ module convention and it works.
 - **Referral API** for your logged-in users:
   - `GET /api/v1/referral/me` — referral status, code and share link.
   - `POST /api/v1/referral/activate` — lazily provision a code/link.
+- **Optional sender mode** — forward a referred signup from your host out to the
+  finonet.ir sales organization (`Modules\Referral\Jobs\ForwardSignupToFinonet`),
+  best-effort and secret-guarded, when a user arrives with `?finonet_ref=<code>`.
 - **Per-project webhook toggles** — enable/disable each inbound endpoint via
   config (a PMS can disable `gateway` + `transaction`; sales projects keep all three).
 - **Sandbox-first** — the shared referral link and integration host point at the
@@ -129,6 +134,7 @@ user returns **422**.
 | [Webhooks](docs/WEBHOOKS.md) | The three inbound endpoints: headers, request fields, responses, status codes, matching + idempotency rules |
 | [Referral API](docs/REFERRAL_API.md) | `GET /referral/me` and `POST /referral/activate` |
 | [Integration](docs/INTEGRATION.md) | The contracts, the example adapters, provider bindings, and the post-signup hook |
+| [Sender mode](docs/SENDER.md) | Opt-in outbound forwarding of a referred signup to finonet.ir: config, wiring, pitfalls, verification |
 | [Architecture](docs/ARCHITECTURE.md) | Layer-by-layer structure and the database schema |
 | [Testing](docs/TESTING.md) | The PHPUnit suite, curl smoke script, and Playwright flow in `examples/` |
 
@@ -159,9 +165,11 @@ models, migrations) is framework-standard and portable.
 
 ## Testing / examples
 
-`examples/` contains a runnable curl smoke script and a Playwright full-flow
-spec that were used to verify this module (signup → dedup → gateway → transaction
-→ negative cases). See [Testing](docs/TESTING.md).
+`examples/` contains runnable curl smoke scripts and Playwright specs for both
+sides: the receiver lifecycle (signup → dedup → gateway → transaction → negative
+cases) and the sender real-flow (`finonet-sender-smoke.sh` +
+`finonet-sender-verify.spec.ts`, which forwards to `finonet.ir` and then logs
+into the panel to confirm the record in the team tree). See [Testing](docs/TESTING.md).
 
 ## License
 

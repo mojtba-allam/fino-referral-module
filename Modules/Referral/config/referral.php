@@ -94,4 +94,26 @@ return [
         'gateway' => (bool) env('FINOPAL_WEBHOOK_GATEWAY_ENABLED', true),
         'transaction' => (bool) env('FINOPAL_WEBHOOK_TRANSACTION_ENABLED', true),
     ],
+
+    /*
+    |--------------------------------------------------------------------------
+    | Outbound Signup Forwarding (this host acts as a SENDER)
+    |--------------------------------------------------------------------------
+    |
+    | Optional. When a user signs up on THIS host carrying a ?finonet_ref=<code>,
+    | the host forwards a signup webhook to the sales organization (finonet.ir)
+    | exactly like finopal does, so the referrer is credited there. This is the
+    | mirror of the inbound signup webhook and uses the SAME contract
+    | ({event, referral_code, user{name,mobile}} signed with
+    | X-Finopal-Webhook-Secret). The OUTBOUND secret is deliberately separate
+    | from the INBOUND FINOPAL_WEBHOOK_SECRET. Disabled by default; enable and
+    | point signup_url at the finonet.ir (or sandbox) endpoint. See docs/SENDER.md.
+    |
+    */
+    'forward' => [
+        'enabled' => (bool) env('FINONET_FORWARD_SIGNUP_ENABLED', false),
+        'signup_url' => env('FINONET_SIGNUP_WEBHOOK_URL', 'https://finonet.ir/api/webhooks/finopal/signup'),
+        'secret' => env('FINONET_WEBHOOK_SECRET', ''),
+        'timeout' => (int) env('FINONET_FORWARD_TIMEOUT', 15),
+    ],
 ];
